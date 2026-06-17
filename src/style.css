@@ -1,0 +1,235 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    scroll-behavior: initial; /* Essential for Lenis smooth scroll */
+  }
+
+  body {
+    background-color: #0D0D11;
+    color: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0D0D11;
+}
+::-webkit-scrollbar-thumb {
+  background: #16161D;
+  border-radius: 3px;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #D4AF37;
+}
+
+/* Premium Noise Overlay */
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  content: "";
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+/* Cinematic Dark Vignette Overlay */
+.cinematic-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  z-index: 35;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cinematic-overlay.active {
+  opacity: 1;
+}
+
+/* Custom Magnetic Cursor */
+.custom-cursor {
+  width: 8px;
+  height: 8px;
+  background-color: #D4AF37;
+  border-radius: 50%;
+  position: fixed;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 10000;
+  transition: width 0.3s, height 0.3s, background-color 0.3s;
+}
+
+.custom-cursor-follower {
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 50%;
+  position: fixed;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 9999;
+  transition: transform 0.08s cubic-bezier(0.25, 1, 0.5, 1), width 0.3s, height 0.3s, border-color 0.3s;
+}
+
+.custom-cursor.hovered {
+  width: 12px;
+  height: 12px;
+  background-color: #FFFFFF;
+}
+
+.custom-cursor-follower.hovered {
+  width: 60px;
+  height: 60px;
+  border-color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Glassmorphism Header */
+.glass-header {
+  background: rgba(13, 13, 17, 0.45);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.4s;
+}
+
+.glass-header.scrolled {
+  background: rgba(8, 8, 11, 0.85);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.08);
+}
+
+/* Masked Link Animations */
+.nav-link-mask {
+  display: block;
+  overflow: hidden;
+  height: 20px;
+  line-height: 20px;
+  position: relative;
+}
+
+.nav-link-text {
+  display: block;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link-hover {
+  display: block;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  color: #D4AF37;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link-mask:hover .nav-link-text {
+  transform: translateY(-100%);
+}
+
+.nav-link-mask:hover .nav-link-hover {
+  transform: translateY(-100%);
+}
+
+/* Premium Liquid Gold Button */
+.btn-gold-liquid {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 9999px;
+  background: transparent;
+  color: #FFFFFF;
+  transition: border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s;
+  box-shadow: 0 0 0px rgba(212, 175, 55, 0);
+  cursor: pointer;
+}
+
+.btn-gold-liquid::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #D4AF37 0%, #FFD700 100%);
+  transition: top 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: -1;
+  border-radius: 9999px;
+}
+
+.btn-gold-liquid:hover::before {
+  top: 0;
+}
+
+.btn-gold-liquid:hover {
+  border-color: #FFD700;
+  color: #0D0D11;
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.3);
+}
+
+/* Custom Liquid Warp Filter via SVG */
+.liquid-filter {
+  filter: url('#liquid-gold-filter');
+}
+
+/* Logo Letter Animations */
+.logo-letter {
+  display: inline-block;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.3s;
+}
+
+.logo:hover .logo-letter {
+  color: #D4AF37;
+}
+
+/* Interactive Service Menu List */
+.service-menu-item {
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  padding-bottom: 1rem;
+  transition: border-color 0.3s;
+}
+
+.service-menu-item:hover {
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+/* Phase 5 Services List Item Hover Micro-Animations */
+.service-item-selector {
+  transition: padding-left 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s;
+}
+
+.service-item-selector:hover {
+  border-color: rgba(212, 175, 55, 0.4);
+  padding-left: 12px;
+}
+
+/* Cinematic Spec Sheet Glassmorphism Card styling */
+.glass-card {
+  background: rgba(13, 13, 17, 0.35);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(212, 175, 55, 0.15);
+  box-shadow: 0 15px 40px rgba(212, 175, 55, 0.04);
+}
