@@ -3,6 +3,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import * as THREE from 'three';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 // Register GSAP ScrollTrigger
 gsap.registerPlugin(ScrollTrigger);
@@ -1221,54 +1222,10 @@ if (mendingCanvas) {
   });
   mendingRenderer.setSize(mendingCanvas.clientWidth, mendingCanvas.clientHeight);
   mendingRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  mendingRenderer.localClippingEnabled = true; // Enable local clipping
 
   const shardsGroup = new THREE.Group();
   mendingScene.add(shardsGroup);
-
-  const shardOuterMaterial = new THREE.MeshPhysicalMaterial({
-    color: '#16161D',
-    roughness: 0.45,
-    metalness: 0.1,
-    clearcoat: 0.8,
-    clearcoatRoughness: 0.2,
-    side: THREE.FrontSide
-  });
-
-  const shardInnerMaterial = new THREE.MeshStandardMaterial({
-    color: '#D4AF37',
-    roughness: 0.15,
-    metalness: 0.95,
-    emissive: '#FFD700',
-    emissiveIntensity: 0.65,
-    side: THREE.BackSide
-  });
-
-  const createShardMesh = (phiStart, phiLength) => {
-    const shardGroup = new THREE.Group();
-    const geom = new THREE.SphereGeometry(1.2, 32, 16, phiStart, phiLength, 0, Math.PI / 2);
-    const outerMesh = new THREE.Mesh(geom, shardOuterMaterial);
-    const innerMesh = new THREE.Mesh(geom, shardInnerMaterial);
-    innerMesh.scale.setScalar(0.98);
-    shardGroup.add(outerMesh, innerMesh);
-    return shardGroup;
-  };
-
-  const shard1 = createShardMesh(0, Math.PI / 2);
-  const shard2 = createShardMesh(Math.PI / 2, Math.PI / 2);
-  const shard3 = createShardMesh(Math.PI, Math.PI / 2);
-  const shard4 = createShardMesh(3 * Math.PI / 2, Math.PI / 2);
-
-  shardsGroup.add(shard1, shard2, shard3, shard4);
-
-  const initialOffset = 0.65;
-  shard1.position.set(initialOffset, 0, initialOffset);
-  shard1.rotation.set(0.3, 0.2, 0.4);
-  shard2.position.set(-initialOffset, 0, initialOffset);
-  shard2.rotation.set(0.3, -0.2, -0.4);
-  shard3.position.set(-initialOffset, 0, -initialOffset);
-  shard3.rotation.set(-0.3, -0.2, 0.4);
-  shard4.position.set(initialOffset, 0, -initialOffset);
-  shard4.rotation.set(-0.3, 0.2, -0.4);
 
   const goldCoreGeometry = new THREE.SphereGeometry(0.35, 32, 32);
   const goldCoreMaterial = new THREE.MeshStandardMaterial({
@@ -1281,34 +1238,146 @@ if (mendingCanvas) {
   const goldCore = new THREE.Mesh(goldCoreGeometry, goldCoreMaterial);
   mendingScene.add(goldCore);
 
-  const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+  // Add dynamic inner point light to glow from inside the shards
+  const innerPointLight = new THREE.PointLight('#FFD700', 3.0, 4);
+  innerPointLight.position.set(0, 0, 0);
+  mendingScene.add(innerPointLight);
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.4);
   mendingScene.add(ambient);
 
   const spotLight = new THREE.SpotLight(0xffd700, 3, 10, Math.PI / 4, 0.5, 1);
   spotLight.position.set(2, 4, 3);
   mendingScene.add(spotLight);
 
-  const mendingTimeline = gsap.timeline({
-    scrollTrigger: {
-      trigger: '#about',
-      start: 'top top',
-      end: 'bottom+=120% top',
-      scrub: 1,
-      pin: true,
-      anticipatePin: 1
+  // Local clipping plane definitions (relative to shard local coordinate space)
+  const localPlaneXPos = new THREE.Plane(new THREE.Vector3(1, 0, 0), 0);
+  const localPlaneXNeg = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
+  const localPlaneZPos = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+  const localPlaneZNeg = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+
+  // World clipping plane definitions (will be updated every frame to match shard transformations)
+  const worldPlane1A = new THREE.Plane();
+  const worldPlane1B = new THREE.Plane();
+  const worldPlane2A = new THREE.Plane();
+  const worldPlane2B = new THREE.Plane();
+  const worldPlane3A = new THREE.Plane();
+  const worldPlane3B = new THREE.Plane();
+  const worldPlane4A = new THREE.Plane();
+  const worldPlane4B = new THREE.Plane();
+
+  // Reference variables for shards and scroll progress (defined in parent scope for mendingTick access)
+  let shard1, shard2, shard3, shard4;
+  let scrollProgress = 0;
+
+  // Synchronous ScrollTrigger pin registration (runs immediately on page load to preserve section layouts)
+  ScrollTrigger.create({
+    trigger: '#about',
+    start: 'top top',
+    end: 'bottom+=120% top',
+    scrub: 1,
+    pin: true,
+    anticipatePin: 1,
+    onUpdate: (self) => {
+      scrollProgress = self.progress;
     }
   });
 
-  mendingTimeline.to(shard1.position, { x: 0, y: 0, z: 0, duration: 1 }, 0)
-    .to(shard1.rotation, { x: 0, y: 0, z: 0, duration: 1 }, 0)
-    .to(shard2.position, { x: 0, y: 0, z: 0, duration: 1 }, 0)
-    .to(shard2.rotation, { x: 0, y: 0, z: 0, duration: 1 }, 0)
-    .to(shard3.position, { x: 0, y: 0, z: 0, duration: 1 }, 0)
-    .to(shard3.rotation, { x: 0, y: 0, z: 0, duration: 1 }, 0)
-    .to(shard4.position, { x: 0, y: 0, z: 0, duration: 1 }, 0)
-    .to(shard4.rotation, { x: 0, y: 0, z: 0, duration: 1 }, 0)
-    .to(goldCoreMaterial, { emissiveIntensity: 3.5, duration: 1 }, 0)
-    .to(goldCore.scale, { x: 1.3, y: 1.3, z: 1.3, duration: 1 }, 0);
+  // Load custom Bag of Gold assets
+  const textureLoader = new THREE.TextureLoader();
+  const diffTexture = textureLoader.load('/Bag_of_gold_v1_L3.123cec1da5f3-1883-4b59-9976-fd1c1af1bdba/13450_Bag_of_Gold_diff.jpg');
+  diffTexture.colorSpace = THREE.SRGBColorSpace;
+
+  const objLoader = new OBJLoader();
+  objLoader.load(
+    '/Bag_of_gold_v1_L3.123cec1da5f3-1883-4b59-9976-fd1c1af1bdba/13450_Bag_of_Gold_v1_L3.obj',
+    (loadedObj) => {
+      // 1. Center and scale the group as a single composite unit (do NOT center child geometries individually)
+      const box = new THREE.Box3().setFromObject(loadedObj);
+      const center = new THREE.Vector3();
+      box.getCenter(center);
+      const size = new THREE.Vector3();
+      box.getSize(size);
+      
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const scaleFactor = 1.6 / maxDim;
+
+      // Wrap in a parent group so we can scale and center it perfectly relative to the wrapper origin (0,0,0)
+      const wrapper = new THREE.Group();
+      loadedObj.scale.set(scaleFactor, scaleFactor, scaleFactor);
+      loadedObj.position.copy(center).multiplyScalar(-scaleFactor);
+      wrapper.add(loadedObj);
+
+      // Helper to generate a clipped quadrant shard from the model
+      const createQuadrantShard = (planes) => {
+        const shard = new THREE.Group();
+        
+        // FrontSide outer textured clone
+        const outerClone = wrapper.clone();
+        outerClone.traverse((child) => {
+          if (child.isMesh) {
+            child.material = new THREE.MeshPhysicalMaterial({
+              map: diffTexture,
+              roughness: 0.5,
+              metalness: 0.15,
+              clearcoat: 0.4,
+              side: THREE.FrontSide,
+              clippingPlanes: planes
+            });
+          }
+        });
+        shard.add(outerClone);
+
+        // BackSide inner gold mending clone
+        const innerClone = wrapper.clone();
+        innerClone.traverse((child) => {
+          if (child.isMesh) {
+            child.material = new THREE.MeshStandardMaterial({
+              color: '#D4AF37',
+              roughness: 0.2,
+              metalness: 0.95,
+              emissive: '#FFD700',
+              emissiveIntensity: 0.15,
+              side: THREE.BackSide,
+              clippingPlanes: planes
+            });
+          }
+        });
+        shard.add(innerClone);
+
+        return shard;
+      };
+
+      // Construct 4 shards
+      shard1 = createQuadrantShard([worldPlane1A, worldPlane1B]);
+      shard2 = createQuadrantShard([worldPlane2A, worldPlane2B]);
+      shard3 = createQuadrantShard([worldPlane3A, worldPlane3B]);
+      shard4 = createQuadrantShard([worldPlane4A, worldPlane4B]);
+
+      shardsGroup.add(shard1, shard2, shard3, shard4);
+
+      // Initial exploded offsets
+      const initialOffset = 0.55;
+      shard1.position.set(initialOffset, 0, initialOffset);
+      shard1.rotation.set(0.2, 0.1, 0.35);
+      
+      shard2.position.set(-initialOffset, 0, initialOffset);
+      shard2.rotation.set(0.2, -0.1, -0.35);
+      
+      shard3.position.set(-initialOffset, 0, -initialOffset);
+      shard3.rotation.set(-0.2, -0.1, 0.35);
+      
+      shard4.position.set(initialOffset, 0, -initialOffset);
+      shard4.rotation.set(-0.2, 0.1, -0.35);
+
+      // Refresh ScrollTrigger to align layouts correctly
+      ScrollTrigger.refresh();
+    },
+    undefined,
+    (err) => {
+      console.error('Error loading Bag of Gold OBJ:', err);
+    }
+  );
 
   window.addEventListener('resize', () => {
     mendingCamera.aspect = mendingCanvas.clientWidth / mendingCanvas.clientHeight;
@@ -1326,8 +1395,53 @@ if (mendingCanvas) {
   const mendingTick = () => {
     if (!mendingActive) return;
     const elapsed = mendingClock.getElapsedTime();
-    shardsGroup.rotation.y = elapsed * 0.15 + mendingMouseX * 0.45;
-    goldCore.rotation.y = -elapsed * 0.25;
+    
+    // Rotate parent group and inner core
+    shardsGroup.rotation.y = elapsed * 0.12 + mendingMouseX * 0.45;
+    goldCore.rotation.y = -elapsed * 0.2;
+
+    // Dynamically update the positions, rotations and clipping planes of the shards based on scroll progress
+    if (shard1 && shard2 && shard3 && shard4) {
+      const p = 1.0 - scrollProgress; // p goes from 1 (exploded) to 0 (mended)
+      const offset = p * 0.55;
+      const rot = p * 0.35;
+
+      shard1.position.set(offset, 0, offset);
+      shard1.rotation.set(p * 0.2, p * 0.1, rot);
+      
+      shard2.position.set(-offset, 0, offset);
+      shard2.rotation.set(p * 0.2, -p * 0.1, -rot);
+      
+      shard3.position.set(-offset, 0, -offset);
+      shard3.rotation.set(-p * 0.2, -p * 0.1, rot);
+      
+      shard4.position.set(offset, 0, -offset);
+      shard4.rotation.set(-p * 0.2, p * 0.1, -rot);
+
+      // Core scale and glow highlights
+      const coreScale = 1.0 + scrollProgress * 0.35;
+      goldCore.scale.set(coreScale, coreScale, coreScale);
+      goldCoreMaterial.emissiveIntensity = 1.5 + scrollProgress * 2.0;
+
+      // Update world matrices for local clipping calculations
+      shard1.updateMatrixWorld(true);
+      shard2.updateMatrixWorld(true);
+      shard3.updateMatrixWorld(true);
+      shard4.updateMatrixWorld(true);
+
+      worldPlane1A.copy(localPlaneXPos).applyMatrix4(shard1.matrixWorld);
+      worldPlane1B.copy(localPlaneZPos).applyMatrix4(shard1.matrixWorld);
+
+      worldPlane2A.copy(localPlaneXNeg).applyMatrix4(shard2.matrixWorld);
+      worldPlane2B.copy(localPlaneZPos).applyMatrix4(shard2.matrixWorld);
+
+      worldPlane3A.copy(localPlaneXNeg).applyMatrix4(shard3.matrixWorld);
+      worldPlane3B.copy(localPlaneZNeg).applyMatrix4(shard3.matrixWorld);
+
+      worldPlane4A.copy(localPlaneXPos).applyMatrix4(shard4.matrixWorld);
+      worldPlane4B.copy(localPlaneZNeg).applyMatrix4(shard4.matrixWorld);
+    }
+
     mendingRenderer.render(mendingScene, mendingCamera);
     requestAnimationFrame(mendingTick);
   };
